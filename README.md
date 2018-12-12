@@ -1,21 +1,35 @@
+### What is this for?
+
+This plugin enables you, to have a production ready Blog within one hour. You simply offload the manual-labor to this plugin.
+
+Use-cases:
+
+- small-medium Blogs
+- small Magazines
+
+For Enterprise use cases, this serves as a nice resource. This plugin is _not_ supposed to be used in _enterprise-production_ ready systems.
+
 ### Install
 
-Add this plugin manually to your gatsby plugins. We will be publishing a npm package, at some point.
+(soon)
+`npm install --save gatsby-source-livingdocs`
 
 ### How to use
 
-Add to your this plugin to your gatsby-config.js file and insert your accessToken
+Add to your this plugin to your gatsby-config.js file and insert your accessToken.
 
-```
-  plugins: [
-    {
-      resolve: 'gatsby-source-livingdocs',
-      options: {
-        limit: 35, // defaults to 10, if there is none, limit 100
-        accessToken: 'your_token',
-      },
-    },
-  ]
+@Todo: publish the npm module. For now, you have to add this to `plugins/gatsby-source-livingdocs` from root. Gatsby will search for any custom-plugins there.
+
+```js
+plugins: [
+  {
+    resolve: "gatsby-source-livingdocs",
+    options: {
+      limit: 35, // defaults to 10, maximum is 100
+      accessToken: "your_livingdocs_token"
+    }
+  }
+];
 ```
 
 ### How to query
