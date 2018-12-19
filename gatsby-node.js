@@ -1,82 +1,64 @@
-const liSDK = require('@livingdocs/node-sdk')
-const crypto = require('crypto')
-const resolveIncludes = require('./includes')
-const includesConfig = require('./includes/config')
-const renderLayout = require('./includes/render')
-const slugify = require('./slugify')
+const liSDK = require("@livingdocs/node-sdk");
+const crypto = require("crypto");
+const resolveIncludes = require("./includes");
+const includesConfig = require("./includes/config");
+const renderLayout = require("./includes/render");
+const slugify = require("./slugify");
+const {
+  documentTypes,
+  defaultDocumentType
+} = require("./includes/config/documentTypes");
 
-const documentTypes = {
-  page: {
-    layoutComponents: {
-      layout: 'page-layout',
-      header: 'page-layout-header',
-      headerItem: 'page-layout-header-item',
-      footer: 'page-layout-footer'
-    }
-  },
-  article: {
-    layoutComponents: {
-      layout: 'article-layout',
-      header: 'article-layout-header',
-      headerItem: 'article-layout-header-item',
-      footer: 'article-layout-footer'
-    }
-  }
-}
-const defaultDocumentType = {
-  defaultDocumentType: {
-    layoutComponents: {
-      layout: 'default-layout',
-      header: 'default-layout-header',
-      headerItem: 'default-layout-header-item',
-      footer: 'default-layout-footer'
-    }
-  }
-}
-
-exports.sourceNodes = async ({actions}, configOptions) => {
-  const {createNode} = actions
+exports.sourceNodes = ({ actions }, configOptions) => {
+  const { createNode } = actions;
 
   // Gatsby adds a configOption that's not needed for this plugin, delete it
-  delete configOptions.plugins
+  delete configOptions.plugins;
 
   // create a new livingdocs-client instance
   const liClient = new liSDK.Client({
-    url: 'https://server.livingdocs.io',
+    url: "https://server.livingdocs.io",
     accessToken: configOptions.accessToken
-  })
+  });
 
-  const limit = configOptions.limit ? configOptions.limit : 10
+  const limit = configOptions.limit ? configOptions.limit : 10;
 
   // get all publications (articles, authors, etc.)
   const getAllPublications = () => {
-    const publication = liClient.getPublications({limit}).then(publications => publications)
-    return publication
-  }
+    const publication = liClient
+      .getPublications({ limit })
+      .then(publications => publications);
+    return publication;
+  };
 
-  const getPublication = async publication => {
-    const livingdoc = await liSDK.document.create({
-      content: publication.content
-    })
+  const getPublication = async (publication, design) => {
+    const livingdoc = liSDK.document.create({
+      content: publication.content,
+      design
+    });
 
-    if (publication.systemdata.documentType === 'article') {
-      await resolveIncludes(livingdoc, liClient, includesConfig)
-      const documentType = publication.systemdata.documentType
-      const currentDocumentType = documentTypes && documentTypes[documentType]
-      const targetDocumentType = currentDocumentType || defaultDocumentType
-      const layoutComponents = targetDocumentType.layoutComponents
-      const html = await renderLayout(livingdoc, layoutComponents)
+    if (
+      publication.systemdata.documentType === "article" ||
+      publication.systemdata.documentType === "page"
+    ) {
+      await resolveIncludes(livingdoc, liClient, includesConfig);
 
-      return html
+      const documentType = publication.systemdata.documentType;
+      const currentDocumentType = documentTypes && documentTypes[documentType];
+      const targetDocumentType = currentDocumentType || defaultDocumentType;
+
+      const layoutComponents = targetDocumentType.layoutComponents;
+      const html = await renderLayout(livingdoc, design, layoutComponents);
+      return html;
     } else {
-      const article = liSDK.document.render(livingdoc)
-      return article
+      const article = liSDK.document.render(livingdoc);
+      return article;
     }
-  }
+  };
 
   // Create your node object
-  const processPublication = async publication => {
-    const html = await getPublication(publication)
+  const processPublication = async (publication, design) => {
+    const html = await getPublication(publication, design);
     const nodeData = {
       id: `${publication.systemdata.documentId}`,
       parent: `__SOURCE__`,
@@ -87,20 +69,26 @@ exports.sourceNodes = async ({actions}, configOptions) => {
       children: [],
       publication, // the graphQL content, schema automatically created by gatsby
       extra: {
-        slug: slugify(publication.metadata.title, publication.systemdata.documentId),
+        slug: slugify(
+          publication.metadata.title,
+          publication.systemdata.documentId
+        ),
         html
       }
-    }
-    return nodeData
-  }
-  async function createNodes () {
-    const allPublications = await getAllPublications()
-
+    };
+    return nodeData;
+  };
+  async function createNodes() {
+    const allPublications = await getAllPublications();
+    const design = await liClient.getDesign({
+      name: "living-times",
+      version: "0.0.14"
+    });
     for (const publication of allPublications) {
-      const nodeData = await processPublication(publication)
-      createNode(nodeData)
+      const nodeData = await processPublication(publication, design);
+      createNode(nodeData);
     }
   }
 
-  return await createNodes()
-}
+  return createNodes();
+};
