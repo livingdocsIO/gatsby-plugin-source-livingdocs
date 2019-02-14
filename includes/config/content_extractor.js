@@ -1,5 +1,5 @@
-const slugify = require("../../slugify");
-const moment = require("moment");
+const slugify = require('../../slugify')
+const moment = require('moment')
 
 module.exports = {
   link,
@@ -11,72 +11,71 @@ module.exports = {
   publishDate,
   profile,
   authorName
-};
-
-function link({ metadata = {}, systemdata = {} } = {}) {
-  return slugify(metadata.title, systemdata.documentId);
 }
 
-function title({ metadata = {} } = {}) {
-  return metadata.title || "";
+function link ({metadata = {}, systemdata = {}} = {}) {
+  return slugify(metadata.title, systemdata.documentId)
 }
 
-function description({ metadata = {} } = {}) {
-  return metadata.description || "";
+function title ({metadata = {}} = {}) {
+  return metadata.title || ''
 }
 
-function profile({ metadata = {} } = {}) {
-  return metadata.profile || "";
+function description ({metadata = {}} = {}) {
+  return metadata.description || ''
 }
 
-function authorName({ metadata = {} } = {}) {
-  if (metadata.prename && metadata.surname)
-    return `${metadata.prename} ${metadata.surname}`;
-  if (metadata.prename) return metadata.prename;
-  if (metadata.surname) return metadata.surname;
-  return "No Name";
+function profile ({metadata = {}} = {}) {
+  return metadata.profile || ''
 }
 
-function image(imageExtractionConfig = {}) {
-  const desiredImageCrop = imageExtractionConfig.crop;
-  const metadataTarget = imageExtractionConfig.target || "teaserImage";
+function authorName ({metadata = {}} = {}) {
+  if (metadata.prename && metadata.surname) { return `${metadata.prename} ${metadata.surname}` }
+  if (metadata.prename) return metadata.prename
+  if (metadata.surname) return metadata.surname
+  return 'No Name'
+}
 
-  return function({ metadata = {} } = {}) {
-    const teaserImage = metadata[metadataTarget];
-    if (!teaserImage) return null;
-    if (!desiredImageCrop) return teaserImage;
-    const crops = teaserImage.crops;
+function image (imageExtractionConfig = {}) {
+  const desiredImageCrop = imageExtractionConfig.crop
+  const metadataTarget = imageExtractionConfig.target || 'teaserImage'
+
+  return function ({metadata = {}} = {}) {
+    const teaserImage = metadata[metadataTarget]
+    if (!teaserImage) return null
+    if (!desiredImageCrop) return teaserImage
+    const crops = teaserImage.crops
     const imageCrop =
-      crops && crops.find(crop => crop.name === desiredImageCrop);
-    if (!imageCrop) return teaserImage;
+      crops && crops.find(crop => crop.name === desiredImageCrop)
+    if (!imageCrop) return teaserImage
     return {
       ...teaserImage,
       url: imageCrop.url,
       width: imageCrop.width,
       height: imageCrop.height
-    };
-  };
+    }
+  }
 }
 
-function flag({ metadata = {} } = {}) {
-  return metadata.flag;
+function flag ({metadata = {}} = {}) {
+  return metadata.flag
 }
 
-function author({ metadata = {} } = {}) {
-  return metadata.author || "";
+function author ({metadata = {}} = {}) {
+  return metadata.author || ''
 }
 
-function publishDate({
+function publishDate ({
   metadata = {},
   first_publication: firstPublication = {}
 } = {}) {
   try {
-    const metadataDate = moment(metadata.publishDate);
-    if (metadataDate.isValid()) return metadataDate.calendar();
-    const recordDate = moment(firstPublication.created_at);
-    if (recordDate.isValid()) return recordDate.calendar();
-    return "";
+    const metadataDate = moment(metadata.publishDate)
+    if (metadataDate.isValid()) return metadataDate.calendar()
+    const recordDate = moment(firstPublication.created_at)
+    if (recordDate.isValid()) return recordDate.calendar()
+    return ''
   } catch (e) {
-    return "";
+    return ''
   }
 }
