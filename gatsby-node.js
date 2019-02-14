@@ -4,10 +4,7 @@ const resolveIncludes = require('./includes')
 const includesConfig = require('./includes/config')
 const renderLayout = require('./includes/render')
 const slugify = require('./slugify')
-const {
-  documentTypes,
-  defaultDocumentType
-} = require('./includes/config/documentTypes')
+const {documentTypes, defaultDocumentType} = require('./includes/config/documentTypes')
 
 exports.sourceNodes = ({actions}, configOptions) => {
   const {createNode} = actions
@@ -22,13 +19,20 @@ exports.sourceNodes = ({actions}, configOptions) => {
   })
 
   const limit = configOptions.limit ? configOptions.limit : 10
+  const recursion = configOptions.recursion ? configOptions.limit : true
+  const allPublications = []
 
   // get all publications (articles, authors, etc.)
-  const getAllPublications = () => {
-    const publication = liClient
-      .getPublications({limit})
-      .then(publications => publications)
-    return publication
+  // @param offset {Number} incrementally increasing to gather documents beyond the limit
+  const getAllPublicationsRecursively = async (offset = 0) => {
+    const publications = await liClient.getPublications({offset, limit})
+    allPublications.push(...publications)
+    publications.length === limit && await getAllPublicationsRecursively(offset + limit)
+  }
+
+  const getAllPublications = async () => {
+    const publications = await liClient.getPublications({limit})
+    allPublications.push(...publications)
   }
 
   const getPublication = async (publication, design) => {
@@ -78,12 +82,15 @@ exports.sourceNodes = ({actions}, configOptions) => {
     }
     return nodeData
   }
+
   async function createNodes () {
-    const allPublications = await getAllPublications()
+    recursion ? await getAllPublicationsRecursively() : await getAllPublications()
+
     const design = await liClient.getDesign({
       name: 'living-times',
-      version: '0.0.14'
+      version: '0.0.19'
     })
+
     for (const publication of allPublications) {
       const nodeData = await processPublication(publication, design)
       createNode(nodeData)
